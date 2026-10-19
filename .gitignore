@@ -1,0 +1,9 @@
+node_modules/
+release/
+.npm-cache/
+.electron-cache/
+.electron-builder-cache/
+.tmp/
+*.log
+*.blockmap
+builder-debug.yml

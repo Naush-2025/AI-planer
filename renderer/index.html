@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <title>AI计划表</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">📅 AI计划表</div>
+    <nav class="tabs">
+      <button class="tab-btn" data-tab="today">今日</button>
+      <button class="tab-btn active" data-tab="plan">编辑计划</button>
+      <button class="tab-btn" data-tab="import">导入</button>
+      <button class="tab-btn" data-tab="settings">设置</button>
+    </nav>
+    <div class="top-actions">
+      <button id="btn-minimize" class="ghost" title="隐藏到系统托盘">— 最小化到托盘</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ============ 今日（极简模式） ============ -->
+    <section id="tab-today" class="tab">
+      <div class="minimal-toolbar">
+        <span class="toolbar-hint" id="today-date"></span>
+        <div class="toolbar-actions">
+          <button id="btn-add-pane" class="ghost hidden">＋ 添加区域</button>
+          <button id="btn-manage" class="ghost">⚙ 管理</button>
+        </div>
+      </div>
+      <div class="minimal-layout" id="minimal-layout"></div>
+    </section>
+
+    <!-- ============ 计划 ============ -->
+    <section id="tab-plan" class="tab active">
+      <div class="toolbar">
+        <div class="filters">
+          <button class="filter-btn active" data-filter="upcoming">即将</button>
+          <button class="filter-btn" data-filter="today">今天</button>
+          <button class="filter-btn" data-filter="overdue">已过期</button>
+          <button class="filter-btn" data-filter="all">全部</button>
+          <button class="filter-btn" data-filter="done">已完成</button>
+        </div>
+        <div class="toolbar-actions">
+          <button id="btn-batch" class="ghost">☑ 批量管理</button>
+          <button id="btn-add" class="primary">＋ 新建任务</button>
+        </div>
+      </div>
+      <div id="task-list" class="task-list"></div>
+      <div id="empty-state" class="empty hidden">还没有任务，点击右上角「新建任务」或到「导入」页解析聊天记录。</div>
+
+      <!-- 批量操作栏 -->
+      <div id="batch-bar" class="batch-bar hidden">
+        <div class="batch-left">
+          <button id="batch-select-all" class="ghost small">全选</button>
+          <button id="batch-select-none" class="ghost small">全不选</button>
+          <span id="batch-count" class="batch-count">已选 0 项</span>
+        </div>
+        <div class="batch-right">
+          <button id="batch-complete" class="small">✓ 标记完成</button>
+          <button id="batch-uncomplete" class="small">↩ 标记未完成</button>
+          <button id="batch-delete" class="small danger">🗑 删除</button>
+          <button id="batch-exit" class="ghost small">退出批量</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 导入 ============ -->
+    <section id="tab-import" class="tab">
+      <div class="panel">
+        <h2>从 DeepSeek 聊天记录导入计划</h2>
+        <p class="hint">
+          ① 把与 DeepSeek 规划计划时的对话文字复制粘贴到下方，或直接选择导出的 .txt / .md / .json 文件；
+          ② 点击「AI 解析」自动提取计划；③ 在结果中勾选确认后导入。
+        </p>
+        <div class="import-actions">
+          <button id="btn-pick-file" class="ghost">📁 选择文件</button>
+          <span id="file-name" class="file-name"></span>
+        </div>
+        <textarea id="chat-input" class="chat-input" placeholder="在此粘贴 DeepSeek 聊天记录……"></textarea>
+        <div class="import-buttons">
+          <button id="btn-parse" class="primary">🤖 AI 解析</button>
+          <button id="btn-clear" class="ghost">清空</button>
+        </div>
+        <div id="parse-status" class="status"></div>
+
+        <div id="parse-result" class="hidden">
+          <div class="result-header">
+            <h3>解析结果（<span id="result-count">0</span> 条）</h3>
+            <div>
+              <button id="btn-check-all" class="ghost small">全选</button>
+              <button id="btn-uncheck-all" class="ghost small">全不选</button>
+            </div>
+          </div>
+          <div id="result-list" class="result-list"></div>
+          <div class="import-buttons">
+            <button id="btn-import" class="primary">✓ 导入勾选的任务</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 设置 ============ -->
+    <section id="tab-settings" class="tab">
+      <div class="panel">
+        <h2>AI 接口设置</h2>
+        <p class="hint">用于解析聊天记录。默认使用 DeepSeek 官方 API，可在 <a href="https://platform.deepseek.com" id="link-platform">platform.deepseek.com</a> 获取 API Key。</p>
+        <div class="form-row">
+          <label>API Key</label>
+          <input type="password" id="set-apikey" placeholder="sk-..." autocomplete="off" />
+        </div>
+        <div class="form-row two">
+          <div>
+            <label>API 地址</label>
+            <input type="text" id="set-apibase" placeholder="https://api.deepseek.com" />
+          </div>
+          <div>
+            <label>模型</label>
+            <input type="text" id="set-model" placeholder="deepseek-chat" />
+          </div>
+        </div>
+
+        <h2>提醒设置</h2>
+        <div class="form-row two">
+          <div>
+            <label>默认提前提醒（分钟）</label>
+            <input type="number" id="set-reminder" min="0" step="1" />
+          </div>
+          <div>
+            <label>补提醒窗口（天）</label>
+            <input type="number" id="set-catchup" min="1" step="1" />
+            <p class="hint">关机错过时，最多补提醒过去这么多天内的任务。</p>
+          </div>
+        </div>
+        <div class="form-row switch-row">
+          <label>开机自动启动</label>
+          <input type="checkbox" id="set-startup" />
+        </div>
+        <div class="form-row switch-row">
+          <label>开机时提醒今日任务</label>
+          <input type="checkbox" id="set-notify-startup" />
+        </div>
+        <div class="form-row switch-row">
+          <label>关闭窗口时最小化到托盘（不退出）</label>
+          <input type="checkbox" id="set-tray" />
+        </div>
+
+        <div class="import-buttons">
+          <button id="btn-save-settings" class="primary">保存设置</button>
+          <button id="btn-test-reminder" class="ghost">🔔 测试提醒</button>
+        </div>
+        <div id="settings-status" class="status"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ 任务编辑模态框 ============ -->
+  <div id="modal-backdrop" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">新建任务</h3>
+        <button id="modal-close" class="ghost">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- 基本信息 -->
+        <div class="field-section">
+          <div class="section-title">基本信息</div>
+          <div class="form-row">
+            <label>标题 <span class="req">*</span></label>
+            <input type="text" id="f-title" placeholder="任务标题" />
+          </div>
+          <div class="form-row">
+            <label>说明</label>
+            <textarea id="f-desc" rows="2" placeholder="补充说明（可选）"></textarea>
+          </div>
+        </div>
+
+        <!-- 提醒方式 -->
+        <div class="field-section">
+          <div class="section-title">提醒方式</div>
+          <div class="form-row">
+            <label>任务类型</label>
+            <div class="radio-group">
+              <label class="radio"><input type="radio" name="f-type" value="once" /> 一次性（到点提醒一次）</label>
+              <label class="radio"><input type="radio" name="f-type" value="repeat" checked /> 重复（按频率反复提醒）</label>
+              <label class="radio"><input type="radio" name="f-type" value="ongoing" /> 持续任务（时间段内持续提醒）</label>
+            </div>
+          </div>
+          <div id="repeat-area">
+            <div class="sub-title">重复设置</div>
+            <div class="form-row">
+              <label>重复频率</label>
+              <div class="freq-row">
+                <span>每</span>
+                <input type="number" id="f-interval" min="1" step="1" value="1" />
+                <select id="f-repeat">
+                  <option value="daily">天</option>
+                  <option value="weekly">周</option>
+                  <option value="monthly">月</option>
+                  <option value="yearly">年</option>
+                </select>
+                <span>提醒一次</span>
+              </div>
+              <p class="hint">例：每 1 天 = 每天提醒；每 2 周 = 隔一周提醒一次；每 3 月 = 每三个月一次。</p>
+            </div>
+            <div class="form-row" id="weekday-row">
+              <label>每周哪几天</label>
+              <div class="weekdays" id="f-weekdays">
+                <label><input type="checkbox" value="0" />日</label>
+                <label><input type="checkbox" value="1" />一</label>
+                <label><input type="checkbox" value="2" />二</label>
+                <label><input type="checkbox" value="3" />三</label>
+                <label><input type="checkbox" value="4" />四</label>
+                <label><input type="checkbox" value="5" />五</label>
+                <label><input type="checkbox" value="6" />六</label>
+              </div>
+            </div>
+            <div class="form-row" id="repeatends-row">
+              <label>结束时间（可选）</label>
+              <input type="datetime-local" id="f-repeatends" />
+              <p class="hint">重复到哪一天为止。周计划填这周日，跨周任务填最后一周的周日；留空 = 一直重复。</p>
+            </div>
+            <div class="form-row" id="targetcount-row">
+              <label>目标打卡次数（可选）</label>
+              <input type="number" id="f-targetcount" min="1" step="1" placeholder="留空 = 每天都要打卡" />
+              <p class="hint">持续任务用：总共打卡 N 次即可。例：刷 1000 题、每天 100 题 → 填 10。</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 提醒时间 -->
+        <div class="field-section">
+          <div class="section-title">提醒时间</div>
+          <div class="form-row">
+            <label>提醒时间</label>
+            <input type="datetime-local" id="f-due" />
+            <p class="hint">一次性任务 = 到点提醒一次；重复任务 = 从这一天开始按频率提醒。</p>
+          </div>
+          <div class="form-row switch-row">
+            <label>全天任务（不选具体时刻，每天上午 9 点提醒）</label>
+            <input type="checkbox" id="f-allday" />
+          </div>
+          <div class="form-row">
+            <label>提前提醒（分钟）</label>
+            <input type="number" id="f-reminder" min="0" step="1" value="30" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="f-save" class="primary">保存</button>
+        <button id="f-cancel" class="ghost">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 剩余量输入弹窗（取消完成用） -->
+  <div id="remain-modal" class="modal-backdrop hidden">
+    <div class="modal small">
+      <div class="modal-header">
+        <h3>取消完成</h3>
+        <button id="remain-close" class="ghost">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="hint" id="remain-hint">还剩多少没完成？</p>
+        <div class="form-row">
+          <input type="number" id="remain-input" min="0" step="1" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="remain-cancel" class="ghost">取消</button>
+        <button id="remain-ok" class="primary">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

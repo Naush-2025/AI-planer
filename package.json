@@ -1,0 +1,47 @@
+{
+  "name": "ai-planer",
+  "productName": "AI计划表",
+  "version": "1.0.0",
+  "description": "AI 计划表 —— 导入 DeepSeek 聊天记录，自动解析计划并定时提醒（支持四年长计划）",
+  "main": "electron/main.js",
+  "author": "Nuash",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "icon": "node scripts/generate-icon.js",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.nuash.aiplaner",
+    "productName": "AI计划表",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "renderer/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AI计划表"
+    }
+  }
+}
